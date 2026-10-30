@@ -34,12 +34,15 @@ export default defineApp({
       path: 'inventory.html',
       auth: true,
       readySelector: '[data-test="inventory-container"]',
+      // O ano no rodapé muda todo janeiro: mascarado para não quebrar a baseline.
+      visual: { mask: ['[data-test="footer-copy"]'] },
     },
     {
       name: 'cart',
       path: 'cart.html',
       auth: true,
       readySelector: '[data-test="cart-list"]',
+      visual: { mask: ['[data-test="footer-copy"]'] },
       skip: ['perf'],
     },
   ],
