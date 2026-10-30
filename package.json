@@ -20,7 +20,7 @@
     "test:visual:update:docker": "tsx scripts/visual-docker.ts",
     "test:api": "tsx scripts/run.ts api",
     "test:perf": "tsx scripts/run.ts perf",
-    "report": "playwright show-report reports/playwright-html",
+    "report": "tsx scripts/run.ts report",
     "summary": "tsx scripts/summary.ts",
     "apps": "tsx scripts/list-apps.ts",
     "typecheck": "tsc --noEmit",

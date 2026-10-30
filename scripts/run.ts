@@ -4,11 +4,13 @@
  *   pnpm test:e2e --app=todomvc --env=production [args extras do Playwright]
  *   pnpm test                       # todos os tipos, todas as apps
  *   pnpm test:playwright --shard=1/2  # tudo menos Lighthouse (aceita args do Playwright)
+ *   pnpm report --app=todomvc         # abre o relatório HTML da última execução
  *
  * O Playwright rejeita flags desconhecidas, então --app/--env são lidos aqui,
  * viram APP/ENV e o restante é repassado.
  */
 import { spawnSync } from 'node:child_process';
+import path from 'node:path';
 import { listApps, resolveTarget, ROOT } from '../config/load';
 
 const TYPES = {
@@ -26,11 +28,11 @@ const TYPES = {
 } as const;
 type PwType = keyof typeof TYPES;
 const ALL_TYPES = ['generic', 'e2e', 'a11y', 'visual', 'api', 'perf', 'playwright'] as const;
-type RunType = (typeof ALL_TYPES)[number] | 'all';
+type RunType = (typeof ALL_TYPES)[number] | 'all' | 'report';
 
 function parseArgs(argv: string[]) {
   const [type, ...rest] = argv;
-  if (!type || (type !== 'all' && !ALL_TYPES.includes(type as never))) {
+  if (!type || (type !== 'all' && type !== 'report' && !ALL_TYPES.includes(type as never))) {
     throw new Error(`Tipo inválido: ${type}. Use: all, ${ALL_TYPES.join(', ')}`);
   }
   let app = process.env.APP || undefined;
@@ -73,6 +75,17 @@ function runPlaywright(app: string, env: string | undefined, types: PwType[], ex
 
 async function main() {
   const { type, apps, env, passthrough } = parseArgs(process.argv.slice(2));
+  if (type === 'report') {
+    if (apps.length !== 1) throw new Error('Informe a app com --app=<nome>');
+    const target = await resolveTarget(apps[0], env);
+    const dir = path.join(target.reportDir, 'playwright-html');
+    const result = spawnSync('npx', ['playwright', 'show-report', dir], {
+      cwd: ROOT,
+      stdio: 'inherit',
+      shell: process.platform === 'win32',
+    });
+    process.exit(result.status ?? 1);
+  }
   // "playwright" = todos os tipos exceto Lighthouse (usado pelos shards do CI).
   const pwTypes: PwType[] =
     type === 'all' || type === 'playwright'
