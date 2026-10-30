@@ -96,6 +96,8 @@ const budgetsSchema = z.object({
       'speed-index': z.number().positive().optional(),
     })
     .default({}),
+  /** Perfil do Lighthouse: "mobile" (padrão, com throttling) ou "desktop". */
+  formFactor: z.enum(['mobile', 'desktop']).default('mobile'),
   /** "error" quebra o build; "warn" só registra. */
   level: z.enum(['error', 'warn']).default('error'),
   /** Execuções por URL (a mediana é usada nas asserções). */
@@ -141,7 +143,13 @@ export const appConfigSchema = z
         disableRules: z.array(ruleExceptionSchema).default([]),
       })
       .default({ tags: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'], disableRules: [] }),
-    budgets: budgetsSchema.default({ categories: {}, metrics: {}, level: 'error', runs: 3 }),
+    budgets: budgetsSchema.default({
+      categories: {},
+      metrics: {},
+      formFactor: 'mobile',
+      level: 'error',
+      runs: 3,
+    }),
   })
   .refine((c) => c.defaultEnv in c.environments, {
     message: 'defaultEnv precisa existir em environments',
