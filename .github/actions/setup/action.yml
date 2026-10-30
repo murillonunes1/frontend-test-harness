@@ -38,9 +38,15 @@ runs:
     - name: Instalar navegadores
       if: inputs.browsers != '' && steps.pw-cache.outputs.cache-hit != 'true'
       shell: bash
-      run: pnpm exec playwright install --with-deps ${{ inputs.browsers == 'all' && '' || inputs.browsers }}
+      env:
+        BROWSERS: ${{ inputs.browsers }}
+      # "all" = sem argumento (todos os navegadores do Playwright)
+      run: pnpm exec playwright install --with-deps ${BROWSERS/#all/}
 
     - name: Instalar dependências de sistema dos navegadores
       if: inputs.browsers != '' && steps.pw-cache.outputs.cache-hit == 'true'
       shell: bash
-      run: pnpm exec playwright install-deps ${{ inputs.browsers == 'all' && '' || inputs.browsers }}
+      env:
+        BROWSERS: ${{ inputs.browsers }}
+      # "all" = sem argumento (todos os navegadores do Playwright)
+      run: pnpm exec playwright install-deps ${BROWSERS/#all/}

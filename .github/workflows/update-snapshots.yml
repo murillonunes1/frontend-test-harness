@@ -2,6 +2,8 @@ name: Atualizar baselines visuais
 
 # Gera as baselines de Linux no mesmo ambiente do CI e faz commit no branch escolhido.
 # Use após uma mudança visual intencional, ou na primeira vez que uma app é adicionada.
+# Obs.: commits feitos com GITHUB_TOKEN não disparam outros workflows; rode o CI
+# manualmente (ou faça um novo push) para validar as baselines novas.
 on:
   workflow_dispatch:
     inputs:

@@ -144,6 +144,7 @@ jobs:
 
       - name: Juntar shards (HTML + JSON por app)
         run: |
+          shopt -s nullglob
           for dir in blob-report/*/; do
             slug=$(basename "$dir")
             PLAYWRIGHT_HTML_OUTPUT_DIR="reports/$slug/playwright-html" \

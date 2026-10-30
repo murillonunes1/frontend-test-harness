@@ -194,6 +194,9 @@ Para atualizar depois de uma mudança visual **intencional**:
 | **Docker**                       | `pnpm test:visual:update:docker --app=minha-app` (usa a imagem oficial do Playwright, igual ao CI)                     |
 | **Local, só para você**          | `pnpm test:visual:update --app=minha-app` (gera baselines da sua plataforma, não versionadas)                          |
 
+O commit feito pelo workflow **não dispara o CI** (limitação do `GITHUB_TOKEN`): rode o workflow
+_Testes front-end_ manualmente ou faça um novo push para validar.
+
 Revise o diff das imagens no PR antes de aprovar. Conteúdo dinâmico (datas, banners rotativos,
 avatares) deve ser mascarado em `routes[].visual.mask`, e não resolvido aumentando a tolerância.
 
