@@ -1,0 +1,7 @@
+node_modules
+pnpm-lock.yaml
+reports
+test-results
+.auth
+.lighthouseci
+**/__screenshots__

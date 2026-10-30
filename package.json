@@ -1,0 +1,53 @@
+{
+  "name": "frontend-test-harness",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Bateria de testes plugável para aplicações front-end externas: E2E, acessibilidade, regressão visual, performance e contratos de API.",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@10.18.3",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "tsx scripts/run.ts all",
+    "test:generic": "tsx scripts/run.ts generic",
+    "test:e2e": "tsx scripts/run.ts e2e",
+    "test:a11y": "tsx scripts/run.ts a11y",
+    "test:visual": "tsx scripts/run.ts visual",
+    "test:visual:update": "tsx scripts/run.ts visual --update-snapshots",
+    "test:visual:update:docker": "tsx scripts/visual-docker.ts",
+    "test:api": "tsx scripts/run.ts api",
+    "test:perf": "tsx scripts/run.ts perf",
+    "report": "playwright show-report reports/playwright-html",
+    "summary": "tsx scripts/summary.ts",
+    "apps": "tsx scripts/list-apps.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@eslint/js": "^10.0.1",
+    "@faker-js/faker": "^10.6.0",
+    "@lhci/cli": "^0.15.1",
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^26.6.6",
+    "dotenv": "^18.0.9",
+    "eslint": "^10.13.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-playwright": "^2.12.1",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.1",
+    "zod": "^4.6.7"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}
