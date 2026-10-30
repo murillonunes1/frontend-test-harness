@@ -1,0 +1,48 @@
+name: Atualizar baselines visuais
+
+# Gera as baselines de Linux no mesmo ambiente do CI e faz commit no branch escolhido.
+# Use após uma mudança visual intencional, ou na primeira vez que uma app é adicionada.
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: 'App em config/apps (vazio = todas)'
+        required: false
+        default: ''
+      env:
+        description: 'Ambiente (vazio = defaultEnv de cada app)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+env:
+  ENV: ${{ inputs.env }}
+  SAUCEDEMO_USER: ${{ secrets.SAUCEDEMO_USER || 'standard_user' }}
+  SAUCEDEMO_PASSWORD: ${{ secrets.SAUCEDEMO_PASSWORD || 'secret_sauce' }}
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          browsers: chromium
+
+      - name: Gerar baselines
+        run: pnpm test:visual:update ${{ inputs.app && format('--app={0}', inputs.app) || '' }}
+
+      - name: Commit das baselines
+        run: |
+          git add tests/visual/__screenshots__
+          if git diff --cached --quiet; then
+            echo "Nenhuma baseline mudou."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "test(visual): atualiza baselines (${{ inputs.app || 'todas as apps' }})"
+          git push

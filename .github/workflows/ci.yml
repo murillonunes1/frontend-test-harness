@@ -1,0 +1,164 @@
+name: Testes front-end
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    # Dias úteis às 06:00 (horário de Brasília = 09:00 UTC)
+    - cron: '0 9 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      app:
+        description: 'App em config/apps (vazio = todas)'
+        required: false
+        default: ''
+      env:
+        description: 'Ambiente (vazio = defaultEnv de cada app)'
+        required: false
+        default: ''
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  ENV: ${{ inputs.env }}
+  # Segredos das apps: configure em Settings → Secrets and variables → Actions.
+  # Os valores padrão abaixo são as credenciais PÚBLICAS da demo saucedemo.
+  SAUCEDEMO_USER: ${{ secrets.SAUCEDEMO_USER || 'standard_user' }}
+  SAUCEDEMO_PASSWORD: ${{ secrets.SAUCEDEMO_PASSWORD || 'secret_sauce' }}
+  # Ao adicionar uma app com login, inclua aqui as variáveis dela:
+  # MINHA_APP_USER: ${{ secrets.MINHA_APP_USER }}
+  # MINHA_APP_PASSWORD: ${{ secrets.MINHA_APP_PASSWORD }}
+
+jobs:
+  quality:
+    name: Lint e tipos
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      apps: ${{ steps.apps.outputs.list }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm format:check
+      - name: Listar apps
+        id: apps
+        run: |
+          if [ -n "${{ inputs.app }}" ]; then
+            echo 'list=["${{ inputs.app }}"]' >> "$GITHUB_OUTPUT"
+          else
+            echo "list=$(pnpm -s apps --json)" >> "$GITHUB_OUTPUT"
+          fi
+
+  playwright:
+    name: Playwright (${{ matrix.app }} ${{ matrix.shard }}/2)
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJSON(needs.quality.outputs.apps) }}
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          browsers: all
+
+      - name: E2E, genéricos, a11y, visual e API
+        run: pnpm test:playwright --app=${{ matrix.app }} --shard=${{ matrix.shard }}/2
+
+      - name: Enviar blob report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: blob-${{ matrix.app }}-${{ matrix.shard }}
+          path: blob-report/
+          retention-days: 3
+
+      - name: Enviar traces, vídeos e screenshots das falhas
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: falhas-${{ matrix.app }}-${{ matrix.shard }}
+          path: test-results/
+          retention-days: 14
+
+  lighthouse:
+    name: Lighthouse (${{ matrix.app }})
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJSON(needs.quality.outputs.apps) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          browsers: chromium
+
+      - run: pnpm test:perf --app=${{ matrix.app }}
+
+      - name: Enviar relatórios do Lighthouse
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-${{ matrix.app }}
+          path: reports/
+          include-hidden-files: true
+          retention-days: 14
+
+  report:
+    name: Relatório consolidado
+    needs: [playwright, lighthouse]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+
+      - name: Baixar blob reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: blob-*
+          path: blob-report
+          merge-multiple: true
+
+      - name: Baixar relatórios do Lighthouse
+        uses: actions/download-artifact@v4
+        with:
+          pattern: lighthouse-*
+          path: reports
+          merge-multiple: true
+
+      - name: Juntar shards (HTML + JSON por app)
+        run: |
+          for dir in blob-report/*/; do
+            slug=$(basename "$dir")
+            PLAYWRIGHT_HTML_OUTPUT_DIR="reports/$slug/playwright-html" \
+            PLAYWRIGHT_HTML_OPEN=never \
+            PLAYWRIGHT_JSON_OUTPUT_FILE="reports/$slug/results.json" \
+              pnpm exec playwright merge-reports --reporter=html,json "$dir"
+          done
+
+      - name: Resumo
+        run: pnpm summary
+
+      - name: Enviar relatório consolidado
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorio-consolidado
+          path: reports/
+          include-hidden-files: true
+          retention-days: 14

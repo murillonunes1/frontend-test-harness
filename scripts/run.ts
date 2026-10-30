@@ -3,6 +3,7 @@
  *
  *   pnpm test:e2e --app=todomvc --env=production [args extras do Playwright]
  *   pnpm test                       # todos os tipos, todas as apps
+ *   pnpm test:playwright --shard=1/2  # tudo menos Lighthouse (aceita args do Playwright)
  *
  * O Playwright rejeita flags desconhecidas, então --app/--env são lidos aqui,
  * viram APP/ENV e o restante é repassado.
@@ -24,7 +25,7 @@ const TYPES = {
   api: { projects: ['api'], paths: [] },
 } as const;
 type PwType = keyof typeof TYPES;
-const ALL_TYPES = ['generic', 'e2e', 'a11y', 'visual', 'api', 'perf'] as const;
+const ALL_TYPES = ['generic', 'e2e', 'a11y', 'visual', 'api', 'perf', 'playwright'] as const;
 type RunType = (typeof ALL_TYPES)[number] | 'all';
 
 function parseArgs(argv: string[]) {
@@ -32,8 +33,8 @@ function parseArgs(argv: string[]) {
   if (!type || (type !== 'all' && !ALL_TYPES.includes(type as never))) {
     throw new Error(`Tipo inválido: ${type}. Use: all, ${ALL_TYPES.join(', ')}`);
   }
-  let app = process.env.APP;
-  let env = process.env.ENV;
+  let app = process.env.APP || undefined;
+  let env = process.env.ENV || undefined;
   const passthrough: string[] = [];
   for (const arg of rest) {
     if (arg === '--') continue; // separador inserido por alguns gerenciadores de pacote
@@ -72,8 +73,13 @@ function runPlaywright(app: string, env: string | undefined, types: PwType[], ex
 
 async function main() {
   const { type, apps, env, passthrough } = parseArgs(process.argv.slice(2));
+  // "playwright" = todos os tipos exceto Lighthouse (usado pelos shards do CI).
   const pwTypes: PwType[] =
-    type === 'all' ? ['generic', 'e2e', 'a11y', 'visual', 'api'] : type === 'perf' ? [] : [type];
+    type === 'all' || type === 'playwright'
+      ? ['generic', 'e2e', 'a11y', 'visual', 'api']
+      : type === 'perf'
+        ? []
+        : [type];
 
   let failed = 0;
   for (const app of apps) {

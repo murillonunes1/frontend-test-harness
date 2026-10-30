@@ -1,0 +1,46 @@
+name: Setup
+description: Instala Node, pnpm, dependências e (opcionalmente) navegadores do Playwright com cache.
+
+inputs:
+  browsers:
+    description: 'Navegadores a instalar ("" = nenhum, "all" = todos, ou lista ex.: "chromium")'
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v4
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version-file: .nvmrc
+        cache: pnpm
+
+    - name: Instalar dependências
+      shell: bash
+      run: pnpm install --frozen-lockfile
+
+    - name: Versão do Playwright
+      if: inputs.browsers != ''
+      id: pw
+      shell: bash
+      run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+    - name: Cache dos navegadores
+      if: inputs.browsers != ''
+      id: pw-cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}-${{ inputs.browsers }}
+
+    - name: Instalar navegadores
+      if: inputs.browsers != '' && steps.pw-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: pnpm exec playwright install --with-deps ${{ inputs.browsers == 'all' && '' || inputs.browsers }}
+
+    - name: Instalar dependências de sistema dos navegadores
+      if: inputs.browsers != '' && steps.pw-cache.outputs.cache-hit == 'true'
+      shell: bash
+      run: pnpm exec playwright install-deps ${{ inputs.browsers == 'all' && '' || inputs.browsers }}

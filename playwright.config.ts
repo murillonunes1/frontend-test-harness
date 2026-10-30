@@ -10,7 +10,8 @@ const isCI = !!process.env.CI;
 const browserMatch = ['generic/**/*.spec.ts', `e2e/${app.name}/**/*.spec.ts`];
 
 const reporters: ReporterDescription[] = isCI
-  ? [['github'], ['blob', { outputDir: path.join(reportDir, 'blob') }]]
+  ? // blob-report/<app>-<env>/ é juntado entre shards no job de relatório do CI.
+    [['github'], ['blob', { outputDir: path.join('blob-report', path.basename(reportDir)) }]]
   : [['list']];
 reporters.push(
   ['html', { outputFolder: path.join(reportDir, 'playwright-html'), open: 'never' }],

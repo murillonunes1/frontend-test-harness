@@ -11,6 +11,7 @@
   },
   "scripts": {
     "test": "tsx scripts/run.ts all",
+    "test:playwright": "tsx scripts/run.ts playwright",
     "test:generic": "tsx scripts/run.ts generic",
     "test:e2e": "tsx scripts/run.ts e2e",
     "test:a11y": "tsx scripts/run.ts a11y",

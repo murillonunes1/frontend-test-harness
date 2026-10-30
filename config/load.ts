@@ -55,14 +55,15 @@ export async function resolveTarget(
   envName = process.env.ENV,
 ): Promise<Target> {
   const apps = listApps();
-  const name = appName ?? (apps.length === 1 ? apps[0] : undefined);
+  // Variáveis vazias (ex.: input não preenchido no GitHub Actions) contam como ausentes.
+  const name = appName || (apps.length === 1 ? apps[0] : undefined);
   if (!name) {
     throw new Error(
       `Informe a app com --app=<nome> (ou APP=<nome>). Disponíveis: ${apps.join(', ')}`,
     );
   }
   const app = await loadApp(name);
-  const resolvedEnv = envName ?? app.defaultEnv;
+  const resolvedEnv = envName || app.defaultEnv;
   const env = app.environments[resolvedEnv];
   if (!env) {
     throw new Error(
