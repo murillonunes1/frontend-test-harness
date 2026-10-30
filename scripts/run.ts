@@ -51,7 +51,15 @@ function runPlaywright(app: string, env: string | undefined, types: PwType[], ex
   const projects = userPicked ? [] : [...new Set(types.flatMap((t) => TYPES[t].projects))];
   // Filtro por caminho só quando um único tipo de navegador foi pedido (generic x e2e).
   const paths = types.length === 1 ? [...TYPES[types[0]!].paths] : [];
-  const args = ['playwright', 'test', ...projects.map((p) => `--project=${p}`), ...paths, ...extra];
+  // Uma app pode não ter testes de um tipo (ex.: sem API): isso não é falha.
+  const args = [
+    'playwright',
+    'test',
+    '--pass-with-no-tests',
+    ...projects.map((p) => `--project=${p}`),
+    ...paths,
+    ...extra,
+  ];
   console.log(`\n▶ ${app}${env ? ` (${env})` : ''}: npx ${args.join(' ')}`);
   const result = spawnSync('npx', args, {
     cwd: ROOT,
