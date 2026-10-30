@@ -27,6 +27,15 @@ export default defineApp({
       skip: ['visual', 'perf'],
     },
   ],
+  a11y: {
+    tags: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'],
+    disableRules: [
+      {
+        id: 'color-contrast',
+        reason: 'Achado real da demo (título e rodapé em cinza claro); fora do nosso controle',
+      },
+    ],
+  },
   budgets: {
     categories: { performance: 0.8, accessibility: 0.8, 'best-practices': 0.8, seo: 0.6 },
     metrics: {
